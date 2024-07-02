@@ -19,10 +19,9 @@ BIN = $(GBA_LLVM)/bin
 LLD = $(BIN)/ld.lld
 GBAFIX = $(BIN)/gbafix
 
-INCLUDE_PATH = $(GBA_LLVM)/lib/clang-runtimes/arm-none-eabi/armv4t/include
 LIB_PATH = $(GBA_LLVM)/lib/clang-runtimes/arm-none-eabi/armv4t/lib
 
-SWIFT_FLAGS = -wmo -parse-as-library -enable-experimental-feature Embedded -target armv4t-none-none-eabi -Osize
+SWIFT_FLAGS = -wmo -parse-as-library -enable-experimental-feature Embedded -enable-experimental-feature Volatile -target armv4t-none-none-eabi -Osize
 LFLAGS = -T$(LIB_PATH)/gba_cart.ld
 SWIFT_FILES = *.swift
 

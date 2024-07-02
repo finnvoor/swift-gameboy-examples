@@ -1,9 +1,8 @@
+import _Volatile
+
 @main struct Game {
     static func main() {
-        let io = UnsafeMutableRawBufferPointer(
-            start: UnsafeMutableRawPointer(bitPattern: 0x4000000),
-            count: 0x3fe
-        )
+        let io = VolatileMappedRegister<UInt32>(unsafeBitPattern: 0x4000000)
 
         let vram = UnsafeMutableBufferPointer<UInt16>(
             start: UnsafeMutablePointer<UInt16>(bitPattern: 0x6000000),
@@ -11,10 +10,7 @@
         )
 
         // Set bitmap video mode and enable background rendering
-        io.baseAddress!.storeBytes(
-            of: 0b10000000011,
-            as: UInt32.self
-        )
+        io.store(0b10000000011)
 
         // Draw a gradient
         for x in 0..<240 {
@@ -30,13 +26,68 @@
     }
 }
 
-@_cdecl("__atomic_compare_exchange_4")
-func __atomic_compare_exchange_4() {}
-@_cdecl("__atomic_fetch_add_4")
-func __atomic_fetch_add_4(ptr: UnsafeMutableRawPointer, val: Int32, memorder: Int32) -> Int32 { 0 }
-@_cdecl("__atomic_fetch_sub_4")
-func __atomic_fetch_sub_4(ptr: UnsafeMutableRawPointer, val: Int32, memorder: Int32) -> Int32 { 0 }
 @_cdecl("__atomic_load_4")
-func __atomic_load_4(ptr: UnsafeRawPointer, memorder: Int32) -> Int32 { 0 }
+func atomicLoad4(
+    _ ptr: UnsafePointer<UInt32>,
+    _ ordering: UInt32
+) -> UInt32 {
+    ptr.pointee
+}
+
 @_cdecl("__atomic_store_4")
-func __atomic_store_4(ptr: UnsafeMutableRawPointer, val: Int32, memorder: Int32) {}
+func atomicStore4(
+    _ ptr: UnsafeMutablePointer<UInt32>,
+    _ value: UInt32,
+    _ ordering: UInt32
+) {
+    ptr.pointee = value
+}
+
+@_cdecl("__atomic_store_2")
+func atomicStore2(
+    _ ptr: UnsafeMutablePointer<UInt16>,
+    _ value: UInt16,
+    _ ordering: UInt32
+) {
+    ptr.pointee = value
+}
+
+@_cdecl("__atomic_fetch_add_4")
+func atomicFetchAdd4(
+    _ ptr: UnsafeMutablePointer<UInt32>,
+    _ value: UInt32,
+    _ ordering: UInt32
+) -> UInt32 {
+    let tmp = ptr.pointee
+    ptr.pointee += value
+    return tmp
+}
+
+@_cdecl("__atomic_fetch_sub_4")
+func atomicFetchSub4(
+    _ ptr: UnsafeMutablePointer<UInt32>,
+    _ value: UInt32,
+    _ ordering: UInt32
+) -> UInt32 {
+    let tmp = ptr.pointee
+    ptr.pointee -= value
+    return tmp
+}
+
+@_cdecl("__atomic_compare_exchange_4")
+func atomicCompareExchange4(
+    _ ptr: UnsafeMutablePointer<UInt32>,
+    _ expected: UnsafeMutablePointer<UInt32>,
+    _ desired: UInt32,
+    _ isWeak: Bool,
+    _ successOrdering: UInt32,
+    _ failureOrdering: UInt32
+) -> Bool {
+    if ptr.pointee == expected.pointee {
+        ptr.pointee = desired
+        return true
+    } else {
+        expected.pointee = ptr.pointee
+        return false
+    }
+}
