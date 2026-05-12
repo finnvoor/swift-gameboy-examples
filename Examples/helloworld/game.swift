@@ -4,11 +4,6 @@ import _Volatile
     static func main() {
         let io = VolatileMappedRegister<UInt32>(unsafeBitPattern: 0x4000000)
 
-        let vram = UnsafeMutableBufferPointer<UInt16>(
-            start: UnsafeMutablePointer<UInt16>(bitPattern: 0x6000000),
-            count: 0xc000
-        )
-
         // Set bitmap video mode and enable background rendering
         io.store(0b10000000011)
 
@@ -18,7 +13,10 @@ import _Volatile
                 let red = UInt16(x * 31 / 239)
                 let blue = UInt16(y * 31 / 159)
                 let color = red | (blue << 10)
-                vram[x + y * 240] = color
+                let pixel = VolatileMappedRegister<UInt16>(
+                    unsafeBitPattern: UInt(0x6000000 + (x + y * 240) * 2)
+                )
+                pixel.store(color)
             }
         }
 
